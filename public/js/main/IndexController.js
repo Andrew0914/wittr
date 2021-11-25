@@ -1,6 +1,6 @@
-import PostsView from './views/Posts';
-import ToastsView from './views/Toasts';
-import idb from 'idb';
+import PostsView from "./views/Posts";
+import ToastsView from "./views/Toasts";
+import idb from "idb";
 
 export default function IndexController(container) {
   this._container = container;
@@ -8,55 +8,72 @@ export default function IndexController(container) {
   this._toastsView = new ToastsView(this._container);
   this._lostConnectionToast = null;
   this._openSocket();
+  this._registerServiceWorker();
 }
 
+// register the service worker
+IndexController.prototype._registerServiceWorker = function () {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => {
+        console.info("Service worker registered ✅");
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed ❌", error);
+      });
+  }
+};
+
 // open a connection to the server for live updates
-IndexController.prototype._openSocket = function() {
+IndexController.prototype._openSocket = function () {
   var indexController = this;
   var latestPostDate = this._postsView.getLatestPostDate();
 
   // create a url pointing to /updates with the ws protocol
-  var socketUrl = new URL('/updates', window.location);
-  socketUrl.protocol = 'ws';
+  var socketUrl = new URL("/updates", window.location);
+  socketUrl.protocol = "ws";
 
   if (latestPostDate) {
-    socketUrl.search = 'since=' + latestPostDate.valueOf();
+    socketUrl.search = "since=" + latestPostDate.valueOf();
   }
 
   // this is a little hack for the settings page's tests,
   // it isn't needed for Wittr
-  socketUrl.search += '&' + location.search.slice(1);
+  socketUrl.search += "&" + location.search.slice(1);
 
   var ws = new WebSocket(socketUrl.href);
 
   // add listeners
-  ws.addEventListener('open', function() {
+  ws.addEventListener("open", function () {
     if (indexController._lostConnectionToast) {
       indexController._lostConnectionToast.hide();
     }
   });
 
-  ws.addEventListener('message', function(event) {
-    requestAnimationFrame(function() {
+  ws.addEventListener("message", function (event) {
+    requestAnimationFrame(function () {
       indexController._onSocketMessage(event.data);
     });
   });
 
-  ws.addEventListener('close', function() {
+  ws.addEventListener("close", function () {
     // tell the user
     if (!indexController._lostConnectionToast) {
-      indexController._lostConnectionToast = indexController._toastsView.show("Unable to connect. Retrying…");
+      indexController._lostConnectionToast = indexController._toastsView.show(
+        "Unable to connect. Retrying…"
+      );
     }
 
     // try and reconnect in 5 seconds
-    setTimeout(function() {
+    setTimeout(function () {
       indexController._openSocket();
     }, 5000);
   });
 };
 
 // called when the web socket sends message data
-IndexController.prototype._onSocketMessage = function(data) {
+IndexController.prototype._onSocketMessage = function (data) {
   var messages = JSON.parse(data);
   this._postsView.addPosts(messages);
 };
