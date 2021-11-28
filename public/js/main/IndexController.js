@@ -16,8 +16,22 @@ IndexController.prototype._registerServiceWorker = function () {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js")
-      .then(() => {
-        console.info("Service worker registered ✅");
+      .then((registration) => {
+        if (!("controller" in navigator.serviceWorker)) return;
+
+        if (registration.waiting) {
+          this._updateReady(registration.waiting);
+          return;
+        }
+
+        if (registration.installing) {
+          this._trackInstalling(registration.installing);
+          return;
+        }
+
+        registration.onupdatefound = () => {
+          this._trackInstalling(registration.installing);
+        };
       })
       .catch((error) => {
         console.error("Service worker registration failed ❌", error);
@@ -76,4 +90,15 @@ IndexController.prototype._openSocket = function () {
 IndexController.prototype._onSocketMessage = function (data) {
   var messages = JSON.parse(data);
   this._postsView.addPosts(messages);
+};
+
+IndexController.prototype._updateReady = function (worker) {
+  console.log("UPDATE ", worker);
+};
+
+IndexController.prototype._trackInstalling = function (worker) {
+  var indexController = this;
+  worker.addEventListener("statechange", () => {
+    if (worker.state === "installed") indexController._updateReady(worker);
+  });
 };
