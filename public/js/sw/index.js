@@ -7,8 +7,8 @@ const urlsToCache = [
   "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
 ];
 
-const STATIC_CHACHE_NAME = "witter-andrew-v7";
-//HELLO WORLD
+const STATIC_CHACHE_NAME = "witter-andrew-v12";
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CHACHE_NAME).then((cache) => {
@@ -37,4 +37,10 @@ self.addEventListener("activate", (event) => {
         )
       )
   );
+});
+
+self.addEventListener("message", function (event) {
+  if (event.data.action === "skipWaiting") {
+    self.skipWaiting();
+  }
 });

@@ -1,7 +1,7 @@
 import PostsView from "./views/Posts";
 import ToastsView from "./views/Toasts";
 import idb from "idb";
-
+// a simple change
 export default function IndexController(container) {
   this._container = container;
   this._postsView = new PostsView(this._container);
@@ -11,14 +11,13 @@ export default function IndexController(container) {
   this._registerServiceWorker();
 }
 
-// register the service worker
+// register the service worker 🎄🎅🏼
 IndexController.prototype._registerServiceWorker = function () {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {
         if (!("controller" in navigator.serviceWorker)) return;
-
         if (registration.waiting) {
           this._updateReady(registration.waiting);
           return;
@@ -36,6 +35,15 @@ IndexController.prototype._registerServiceWorker = function () {
       .catch((error) => {
         console.error("Service worker registration failed ❌", error);
       });
+
+    // Ensure refresh is only called once.
+    // This works around a bug in "force update on reload".
+    var refreshing;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (refreshing) return;
+      window.location.reload();
+      refreshing = true;
+    });
   }
 };
 
@@ -93,7 +101,14 @@ IndexController.prototype._onSocketMessage = function (data) {
 };
 
 IndexController.prototype._updateReady = function (worker) {
-  console.log("UPDATE ", worker);
+  var toast = this._toastsView.show("New version available", {
+    buttons: ["refresh", "dismiss"],
+  });
+
+  toast.answer.then(function (answer) {
+    if (answer != "refresh") return;
+    worker.postMessage({ action: "skipWaiting" });
+  });
 };
 
 IndexController.prototype._trackInstalling = function (worker) {
