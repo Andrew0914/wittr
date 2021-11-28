@@ -1,5 +1,5 @@
 const urlsToCache = [
-  "/",
+  "/skeleton",
   "js/main.js",
   "css/main.css",
   "imgs/icon.png",
@@ -7,7 +7,7 @@ const urlsToCache = [
   "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
 ];
 
-const STATIC_CHACHE_NAME = "witter-andrew-v12";
+const STATIC_CHACHE_NAME = "witter-andrew-v13";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -18,6 +18,13 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  var requestUrl = new URL(event.request.url);
+
+  if (requestUrl.origin === location.origin && requestUrl.pathname === "/") {
+    event.respondWith(caches.match("/skeleton"));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(function (response) {
       return response || fetch(event.request);
